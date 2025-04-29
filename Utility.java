@@ -169,12 +169,12 @@ public class Utility extends Thread {
 			OutputStream o = socket.getOutputStream();
 			PrintWriter writer = new PrintWriter(o, true);
 			for (int i : data) {
-				while(i<= 5) {
+				while(i<= 4) {
 					
 					dataFirst[i] = data[i];
 					
 				}
-				for(int j=data.length-5; j<=data.length; j++) {
+				for(int j=data.length-5; j<data.length; j++) {
 					
 					dataLast[i] = data[i];
 				}
