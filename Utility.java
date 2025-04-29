@@ -18,11 +18,12 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
 public class Utility extends Thread {
-
+	private static final Logger LOGGER = Logger.getLogger(Utility.class.getName());
 	private int portNo;
 	private String sortType;
 	private static final Lock entryLock = new ReentrantLock();
@@ -37,11 +38,13 @@ public class Utility extends Thread {
 
 	@Override
 	public void run() {
+		String status = "Currently Running";
+		
 		try {
 			serverSocket = new ServerSocket(portNo);
 			System.out.println("Server Started @ " + portNo);
 			
-			listenToMulticast();
+			listenToMulticast(status);
 
 			while (running) {
 				Socket clientSocket = serverSocket.accept();
@@ -54,8 +57,11 @@ public class Utility extends Thread {
 		} catch (Exception e) {
 			System.out.println("Failed to Connect");
 			e.printStackTrace();
+			LOGGER.severe("An error has occurred");
 			// serverSocket.close();
+			status = "Process Failed";
 		}
+		
 	}
 
 	public static void insertionSort(int[] data) {
@@ -190,7 +196,7 @@ public class Utility extends Thread {
 		}
 	}
 
-	private void listenToMulticast() {
+	private void listenToMulticast(String status) {
 		Thread multicastThread = new Thread(new Runnable() {
 			public void run() {
 
@@ -209,7 +215,10 @@ public class Utility extends Thread {
 						System.out.println("Message Received: " + message);
 
 						// response
-						String response = "hello back";
+						
+						String hostAddress = group.getHostAddress();
+						String response= null;
+					  response = hostAddress + 6000 + status;
 						byte[] responseByte = response.getBytes(StandardCharsets.UTF_8);
 						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
 								packet.getAddress(), packet.getPort());
