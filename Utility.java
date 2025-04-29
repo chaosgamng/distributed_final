@@ -218,7 +218,7 @@ public class Utility extends Thread {
 						
 						String hostAddress = group.getHostAddress();
 						String response= null;
-					  response = hostAddress+ " " + 6000 + " " + status;
+					  response = hostAddress + " " + 6000 + " " + status;
 						byte[] responseByte = response.getBytes(StandardCharsets.UTF_8);
 						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
 								packet.getAddress(), packet.getPort());
