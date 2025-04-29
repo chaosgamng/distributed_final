@@ -161,15 +161,33 @@ public class Utility extends Thread {
 
 	public synchronized static void sendData(Socket socket, int[] data) {
 
+	int[] dataFirst = null;
+		int[] dataLast = null;
+		String dataFile = null;
 		try {
 			System.out.println("Attempting connection");
 			OutputStream o = socket.getOutputStream();
 			PrintWriter writer = new PrintWriter(o, true);
 			for (int i : data) {
-				writer.print(i + " ");
+				while(i<= 5) {
+					
+					dataFirst[i] = data[i];
+					
+				}
+				for(int j=data.length-5; j<=data.length; j++) {
+					
+					dataLast[i] = data[i];
+				}
+				int [] dataArray = combine(dataFirst, dataLast);
+				String dataAll = Arrays.toString(dataArray);
+				
+				dataFile = dataAll;
+				
+			}
+			
+			writer.print(dataFile );
 
 				System.out.println("Success");
-			}
 			writer.flush();
 			System.out.println("Data Sent");
 		} catch (Exception e) {
