@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.BufferedInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
@@ -158,33 +159,30 @@ public class Utility extends Thread {
 
 		return data;
 	}
+	
+	public static int[] combine(int[] first, int [] last) {
+		int length1 = first.length;
+		int length2 = last.length;
+		int [] combined = new int[length1 + length2];
+		
+		System.arraycopy(first, 0, combined, 0, length1);
+		System.arraycopy(last, 0, combined, 0, length2);
+		return combined;
+	}
 
 	public synchronized static void sendData(Socket socket, int[] data) {
-
-	int[] dataFirst = null;
-		int[] dataLast = null;
-		String dataFile = null;
+		
+	
 		try {
 			System.out.println("Attempting connection");
 			OutputStream o = socket.getOutputStream();
 			PrintWriter writer = new PrintWriter(o, true);
-			for (int i : data) {
-				while(i<= 4) {
-					
-					dataFirst[i] = data[i];
-					
-				}
-				for(int j=data.length-5; j<data.length; j++) {
-					
-					dataLast[i] = data[i];
-				}
-				int [] dataArray = combine(dataFirst, dataLast);
-				String dataAll = Arrays.toString(dataArray);
-				
-				dataFile = dataAll;
-				
-			}
+			int[] dataFirst = Arrays.copyOfRange(data, 0, Math.min(5, data.length));
+			int[] dataLast = Arrays.copyOfRange(data, Math.max(0, data.length-5), data.length);
 			
+			int[] dataArray = combine(dataFirst, dataLast);
+			String dataFile = Arrays.toString(dataArray);
+			System.out.println("Sending data: "  + dataFile);
 			writer.print(dataFile );
 
 				System.out.println("Success");
@@ -236,7 +234,7 @@ public class Utility extends Thread {
 						
 						String hostAddress = group.getHostAddress();
 						String response= null;
-					  response = hostAddress + " " + 6000 + " " + status;
+					  response = hostAddress + " " + 6000 +" " +  status;
 						byte[] responseByte = response.getBytes(StandardCharsets.UTF_8);
 						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
 								packet.getAddress(), packet.getPort());
@@ -282,7 +280,15 @@ class ClientHandler implements Runnable {
 		try {
 			int data[] = Utility.receiveData(clientSocket);
 			Utility.sortData(data, sortType);
-			Utility.sendData(clientSocket, data);
+			int result = data.length;
+			String masterIP= clientSocket.getInetAddress().getHostAddress();
+			int masterPort = 6500;
+			try(Socket returnSocket = new Socket(masterIP, masterPort);
+					OutputStream os =  returnSocket.getOutputStream()){
+				os.write(Integer.toString(result).getBytes(StandardCharsets.UTF_8));
+				os.flush();
+			}
+			
 			clientSocket.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
