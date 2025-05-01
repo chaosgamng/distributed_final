@@ -169,7 +169,6 @@ public class Utility extends Thread {
 		System.arraycopy(last, 0, combined, 0, length2);
 		return combined;
 	}
-
 	public synchronized static void sendData(Socket socket, int[] data) {
 		
 	
@@ -179,11 +178,21 @@ public class Utility extends Thread {
 			PrintWriter writer = new PrintWriter(o, true);
 			int[] dataFirst = Arrays.copyOfRange(data, 0, Math.min(5, data.length));
 			int[] dataLast = Arrays.copyOfRange(data, Math.max(0, data.length-5), data.length);
+			int sum = 0;
+			for(int i=0; i<Math.min(5, data.length); i++ ) {
+				sum+= data[i];
+			}
+			for(int i=Math.max(0, data.length-5); i<data.length; i++) {
+				sum+= data[i];
+			}
+			
 			
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
-			System.out.println("Sending data: "  + dataFile);
-			writer.print(dataFile );
+			System.out.println("Sending data: "  + sum);
+			System.out.println("Numbers given: " + dataArray);
+			writer.print(sum );
+			writer.print(dataFile);
 
 				System.out.println("Success");
 			writer.flush();
