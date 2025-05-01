@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
 public class Utility extends Thread {
-	
+	static String status = null;
 	private int portNo;
 	private String sortType;
 	private static final Lock entryLock = new ReentrantLock();
@@ -39,7 +39,7 @@ public class Utility extends Thread {
 
 	@Override
 	public void run() {
-		String status = "Currently Running\n";
+		status= "Available";
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
@@ -60,7 +60,7 @@ public class Utility extends Thread {
 			e.printStackTrace();
 			
 			// serverSocket.close();
-			status = "Process Failed\n";
+			status = "Available";
 		}
 		
 	}
@@ -139,6 +139,7 @@ public class Utility extends Thread {
 	}
 
 	public synchronized static int[]  receiveData(Socket socket) throws IOException {
+		status = "Not Available";
 		int[] data = null;
 		try {
 			BufferedInputStream b = new BufferedInputStream(socket.getInputStream());
@@ -156,8 +157,9 @@ public class Utility extends Thread {
 			System.out.println("Data Reception Failed\n");
 			e.printStackTrace();
 		}
-
+		
 		return data;
+		
 	}
 	
 	public static int[] combine(int[] first, int [] last) {
@@ -168,11 +170,12 @@ public class Utility extends Thread {
 		System.arraycopy(first, 0, combined, 0, length1);
 		System.arraycopy(last, 0, combined, 0, length2);
 		return combined;
+		
 	}
 
 	public synchronized static void sendData(Socket socket, int[] data) {
 		
-	
+		status = "Not Available";
 		try {
 			System.out.println("Attempting connection");
 			OutputStream o = socket.getOutputStream();
@@ -192,8 +195,8 @@ public class Utility extends Thread {
 			String dataFile = Arrays.toString(dataArray);
 			System.out.println("Sending data: \n"  + sum);
 			System.out.println("Numbers given: \n" + dataArray);
-			writer.print(sum );
-			writer.print(dataFile);
+			writer.print(sum);
+			//writer.print(dataFile);
 
 				System.out.println("Success\n");
 			writer.flush();
@@ -202,6 +205,8 @@ public class Utility extends Thread {
 			System.out.println("Write Failed\n");
 			e.printStackTrace();
 		}
+		status = "Available";
+		
 
 	}
 
