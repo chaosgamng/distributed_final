@@ -227,7 +227,7 @@ public class Utility extends Thread {
 
 				try (MulticastSocket socket = new MulticastSocket(6000)) {
 					InetAddress group = InetAddress.getByName("224.0.0.22");
-					NetworkInterface netIf = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+					NetworkInterface netIf = NetworkInterface.getByName("eth0);
 					socket.joinGroup(new InetSocketAddress(group, 6000), netIf);
 
 					byte[] buffer = new byte[1024];
