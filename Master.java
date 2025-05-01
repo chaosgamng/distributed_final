@@ -1,6 +1,5 @@
 import java.io.InputStream;
 import java.net.Socket;
-import java.time.LocalDateTime;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -38,7 +37,7 @@ public void connect(){
 try{
     clientSocket = new Socket(address, portNo);
 }catch(Exception e){
-    System.out.printf("Master Failed to Connect to Utility Server / %s\n", LocalDateTime.now());
+    System.out.printf("Master Failed to Connect to Utility Server");
     
 
 }
@@ -65,7 +64,7 @@ public void run(){
 }
 
 public void healthCheck(){
-    System.out.printf("Initiating HealthCheck %s\n", LocalDateTime.now());
+    System.out.printf("Initiating HealthCheck");
     serverList = new ArrayList<ServerList>();
     MulticastSocket s = null;
     String message = "Hello";
@@ -75,7 +74,7 @@ public void healthCheck(){
         InetAddress address = InetAddress.getByName("10.0.2.15");
         InetSocketAddress a = new InetSocketAddress(address, 6000);   
         DatagramPacket packet  = new DatagramPacket(message.getBytes(), message.length(), a);
-        System.out.printf("Sending Health Check Packet %s\n", LocalDateTime.now());
+        System.out.printf("Sending Health Check Packet");
             s.send(packet);
 
 
@@ -83,22 +82,22 @@ public void healthCheck(){
         byte[] buffer = new byte[1000];
         DatagramPacket p = new DatagramPacket(buffer, 0, buffer.length);
 
-        System.out.printf("Starting wait %s\n", LocalDateTime.now());
+        System.out.printf("Starting wait");
         while(s.isClosed() == false){
         s.setSoTimeout(5000);
         s.receive(p);
         processCheck(p);
-        System.out.printf("Response Packet Received %s\n", LocalDateTime.now());
+        System.out.printf("Response Packet Received");
         }
 
         s.close();
 
-        System.out.printf("Wait ended %s\n", LocalDateTime.now());
+        System.out.printf("Wait ended");
     }catch(Exception e){
         
     }
     finally{
-        System.out.printf("Heartbeat Check Complete %s\n", LocalDateTime.now());
+        System.out.printf("Heartbeat Check Complete");
     }
 }
 
@@ -128,10 +127,10 @@ public String receiveFile(){
         InputStream i = clientSocket.getInputStream();
         byte[] bytes = i.readAllBytes();
         s = new String(bytes, StandardCharsets.UTF_8);
-        System.out.printf("File Received from Client %s\n", LocalDateTime.now());
+        System.out.printf("File Received from Client");
 
     }catch(Exception e){
-        System.out.printf("File Reception From Client Failed %s\n", LocalDateTime.now());
+        System.out.printf("File Reception From Client Failed");
     }
 
     return s;
@@ -148,9 +147,14 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
     int received = 0;
     //keeps track of array pieces received
     int total = 0;
-
+    //value for controller receiving loop
+    boolean receiving = true;
     while(received < units){
         if(serverList.size() > 0){
+            //check if data has been previously and needs to be resent
+        if(m.isEmpty() == false){
+            resendData(m, tokens, socket);
+        }
         //send as much data as possible to utility servers and return how many array pieces were sent
         sent = sendDataToUtil(sent, socket, tokens, units, m);
         try{
@@ -158,14 +162,14 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
          //establishes listening socket to receive data return data from all servers
          //can be filtered by checking with hashmap 
         ServerSocket serve = new ServerSocket(6500);
-
+        while(receiving == true){
         serve.setSoTimeout(5000);
         socket = serve.accept();
         if(socket != null){
-           boolean found = checkList(socket.getInetAddress().getHostAddress(), socket.getPort(), m);
+           int found = checkList(socket.getInetAddress().getHostAddress(), socket.getPort(), m);
 
                 //if connection is on waiting list, read in data, increment total and number of array pieces received
-                if(found == true){
+                if(found != -1){
                 BufferedInputStream i = new BufferedInputStream(socket.getInputStream());
 
                 byte[] b = i.readAllBytes();
@@ -173,16 +177,21 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
                 String str = b.toString();
 
                 total += Integer.parseInt(str);
+                
+                //remove server from hashmap to indicate failure to receive
+                m.remove(found);
 
                 received++;
                 }
                 else{
                     socket.close();
                 }
+            }
 
         }
         }catch(Exception e){
-            System.out.printf("Failed to Receive Data %s\n", LocalDateTime.now());
+            System.out.printf("Wait Timed Out");
+            receiving = false;
         }
         
         }
@@ -190,7 +199,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
             try{
             sleep(5000);
             }catch(Exception e){
-                System.out.printf("Sleep Failed %s\n", LocalDateTime.now());
+                System.out.printf("Sleep Failed");
             }
         }
     }
@@ -200,10 +209,11 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
 
 //send data to utility servers and send back how many parts of array have been sent
 public int sendDataToUtil(int sent, Socket socket, String[] array, int units, HashMap<Integer, ServerList> m){
+    //Check if first time sending data or dealing with failure to receive
     for(int i = 0; i < serverList.size(); i++){
         if(serverList.get(i).getStatus() == "Available" && sent < units){
             try{
-                System.out.printf("Sending data to server %d %s\n", i, LocalDateTime.now());
+                System.out.printf("Sending data to server");
             socket = new Socket(serverList.get(i).getIp(), serverList.get(i).getPort());
             OutputStream o = socket.getOutputStream();
 
@@ -226,10 +236,12 @@ public int sendDataToUtil(int sent, Socket socket, String[] array, int units, Ha
 
             //iterate to next segment and close current connection
             sent++;
+            o.flush();
             o.close();
             }catch(Exception e){
-                System.out.printf("Failed to send data %s\n", LocalDateTime.now());
+                System.out.printf("Failed to send data");
             }
+            
             
         }
         
@@ -239,16 +251,55 @@ public int sendDataToUtil(int sent, Socket socket, String[] array, int units, Ha
 }
 
 //checks HashMap for whether or not current socket connection is on the list
-public boolean checkList(String ip, int port, HashMap<Integer, ServerList> m){
-    boolean found = false;
+public int checkList(String ip, int port, HashMap<Integer, ServerList> m){
+    int found = -1;
 
     for(int key : m.keySet()){
         if(m.get(key).getIp() == ip && m.get(key).getPort() == port){
-            found = true;
+            found = key;
         }
+
     }
 
     return found;
+}
+
+//resend data that wasn't received within the time period
+public void resendData(HashMap<Integer, ServerList> m, String[] array, Socket socket){
+    System.out.printf("Resending Data that Failed to Receive");
+    for(int key: m.keySet()){
+        for(int i = 0; i < serverList.size(); i++){
+            if(serverList.get(i).getStatus() == "Available"){
+                try{
+                    System.out.printf("Sending data to server");
+                    socket = new Socket(serverList.get(i).getIp(), serverList.get(i).getPort());
+                    OutputStream o = socket.getOutputStream();
+        
+                    int start = key * 10000000;
+                    int finish = (key + 1) * 10000000;
+        
+                    if(finish > array.length){
+                        finish = array.length;
+                }
+             //send data to new util server
+            for(int j = start; j < finish; j++){
+                byte[] b = array[j].getBytes();
+                o.write(b);
+            }
+
+            //place updated util server in hashmap, with segment # as index value
+            m.put(key, serverList.get(i));
+
+            o.flush();
+            o.close();
+            }catch(Exception e){
+                System.out.printf("Failed to send data");
+            }
+            
+        }
+    }
+}
+
 }
 
 //return data to client
@@ -264,9 +315,9 @@ public void returnData(int sum, String ip, int port){
         o.close();
         s.close();
 
-        System.out.printf("Final Data Sent Successfully %s\n", LocalDateTime.now());
+        System.out.printf("Final Data Sent Successfully");
     }catch(Exception e){
-        System.out.printf("Final Data Send Failed %s\n", LocalDateTime.now());
+        System.out.printf("Final Data Send Failed");
     }
 
 }
@@ -281,20 +332,20 @@ public void endThread(){
 //waits for client connection
 public void await(){
     try{
-        System.out.printf("Waiting for Client to Connect %s\n", LocalDateTime.now());
+        System.out.printf("Waiting for Client to Connect");
     serverSocket = new ServerSocket(portNo);
     while(running){
         clientSocket = serverSocket.accept();
-        System.out.printf("Connection to Client Successful %s\n", LocalDateTime.now());
+        System.out.printf("Connection to Client Successful");
         if(clientSocket.isConnected()){
-            System.out.printf("Task Takeover Thread Spawned %s\n", LocalDateTime.now());
+            System.out.printf("Task Takeover Thread Spawned");
             Master m = new Master(5000);
             m.clientSocket = this.clientSocket;
             m.start();
         }
     }
 }catch(Exception e){
-    System.out.printf("Connection to Client Failed %s\n", LocalDateTime.now());
+    System.out.printf("Connection to Client Failed");
 }
 }
 
