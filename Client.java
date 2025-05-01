@@ -28,7 +28,7 @@ public void connect(){
 try{
     s = new Socket(address, portNo);
 }catch(Exception e){
-    System.out.printf("Master Failed to Connect to Utility Server / %s", LocalDateTime.now());
+    System.out.printf("Master Failed to Connect to Utility Server\n");
     
 
 }
