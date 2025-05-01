@@ -190,9 +190,9 @@ public class Utility extends Thread {
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
 			System.out.println("Sending data: "  + sum);
-			System.out.println("Numbers given: " + dataArray);
+			//System.out.println("Numbers given: " + dataArray);
 			writer.print(sum );
-			writer.print(dataFile);
+			//writer.print(dataFile);
 
 				System.out.println("Success");
 			writer.flush();
