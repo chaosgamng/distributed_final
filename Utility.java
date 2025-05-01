@@ -58,7 +58,7 @@ public class Utility extends Thread {
 		} catch (Exception e) {
 			System.out.println("Failed to Connect\n");
 			e.printStackTrace();
-			LOGGER.severe("An error has occurred\n");
+			
 			// serverSocket.close();
 			status = "Process Failed\n";
 		}
