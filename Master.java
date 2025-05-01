@@ -37,7 +37,7 @@ public void connect(){
 try{
     clientSocket = new Socket(address, portNo);
 }catch(Exception e){
-    System.out.printf("Master Failed to Connect to Utility Server");
+    System.out.printf("Master Failed to Connect to Utility Server\n");
     
 
 }
@@ -82,22 +82,22 @@ public void healthCheck(){
         byte[] buffer = new byte[1000];
         DatagramPacket p = new DatagramPacket(buffer, 0, buffer.length);
 
-        System.out.printf("Starting wait");
+        System.out.printf("Starting wait\n");
         while(s.isClosed() == false){
         s.setSoTimeout(5000);
         s.receive(p);
         processCheck(p);
-        System.out.printf("Response Packet Received");
+        System.out.printf("Response Packet Received\n");
         }
 
         s.close();
 
-        System.out.printf("Wait ended");
+        System.out.printf("Wait ended\n");
     }catch(Exception e){
         
     }
     finally{
-        System.out.printf("Heartbeat Check Complete");
+        System.out.printf("Heartbeat Check Complete\n");
     }
 }
 
@@ -127,10 +127,10 @@ public String receiveFile(){
         InputStream i = clientSocket.getInputStream();
         byte[] bytes = i.readAllBytes();
         s = new String(bytes, StandardCharsets.UTF_8);
-        System.out.printf("File Received from Client");
+        System.out.printf("File Received from Client\n");
 
     }catch(Exception e){
-        System.out.printf("File Reception From Client Failed");
+        System.out.printf("File Reception From Client Failed\n");
     }
 
     return s;
@@ -190,7 +190,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
 
         }
         }catch(Exception e){
-            System.out.printf("Wait Timed Out");
+            System.out.printf("Wait Timed Out\n");
             receiving = false;
         }
         
@@ -199,7 +199,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
             try{
             sleep(5000);
             }catch(Exception e){
-                System.out.printf("Sleep Failed");
+                System.out.printf("Sleep Failed\n");
             }
         }
     }
@@ -239,7 +239,7 @@ public int sendDataToUtil(int sent, Socket socket, String[] array, int units, Ha
             o.flush();
             o.close();
             }catch(Exception e){
-                System.out.printf("Failed to send data");
+                System.out.printf("Failed to send data\n");
             }
             
             
@@ -293,7 +293,7 @@ public void resendData(HashMap<Integer, ServerList> m, String[] array, Socket so
             o.flush();
             o.close();
             }catch(Exception e){
-                System.out.printf("Failed to send data");
+                System.out.printf("Failed to send data\n");
             }
             
         }
@@ -315,9 +315,9 @@ public void returnData(int sum, String ip, int port){
         o.close();
         s.close();
 
-        System.out.printf("Final Data Sent Successfully");
+        System.out.printf("Final Data Sent Successfully\n");
     }catch(Exception e){
-        System.out.printf("Final Data Send Failed");
+        System.out.printf("Final Data Send Failed\n");
     }
 
 }
@@ -332,20 +332,20 @@ public void endThread(){
 //waits for client connection
 public void await(){
     try{
-        System.out.printf("Waiting for Client to Connect");
+        System.out.printf("Waiting for Client to Connect\n");
     serverSocket = new ServerSocket(portNo);
     while(running){
         clientSocket = serverSocket.accept();
-        System.out.printf("Connection to Client Successful");
+        System.out.printf("Connection to Client Successful\n");
         if(clientSocket.isConnected()){
-            System.out.printf("Task Takeover Thread Spawned");
+            System.out.printf("Task Takeover Thread Spawned\n");
             Master m = new Master(5000);
             m.clientSocket = this.clientSocket;
             m.start();
         }
     }
 }catch(Exception e){
-    System.out.printf("Connection to Client Failed");
+    System.out.printf("Connection to Client Failed\n");
 }
 }
 
