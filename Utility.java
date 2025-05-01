@@ -19,12 +19,12 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Logger;
+
 
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
 public class Utility extends Thread {
-	private static final Logger LOGGER = Logger.getLogger(Utility.class.getName());
+	
 	private int portNo;
 	private String sortType;
 	private static final Lock entryLock = new ReentrantLock();
