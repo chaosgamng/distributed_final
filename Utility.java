@@ -45,21 +45,21 @@ public class Utility extends Thread {
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
-			System.out.println("Server Started @ " + portNo);
+			System.out.printf("Server Started @ %d\n", portNo);
 			
 			listenToMulticast(status);
 
 			while (running) {
-				System.out.println("Awaiting Master Server Connection");
+				System.out.printf("Awaiting Master Server Connection\n");
 				Socket clientSocket = serverSocket.accept();
-				System.out.println("Connection Successful");
+				System.out.printf("Connection Successful\n");
 
 				Thread t = new Thread(new ClientHandler(clientSocket, sortType));
 				t.start();
 			}
 
 		} catch (Exception e) {
-			System.out.println("Failed to Connect");
+			System.out.printf("Failed to Connect\n");
 			e.printStackTrace();
 			LOGGER.severe("An error has occurred");
 			// serverSocket.close();
@@ -158,7 +158,6 @@ public class Utility extends Thread {
 			byte[] bytes = b.readAllBytes();
 
 			String str = new String(bytes, StandardCharsets.UTF_8);
-			System.out.println(str);
 			String[] tokens = str.split(" ");
 			data = new int[tokens.length];
 			for (int i = 0; i < tokens.length; i++) {
@@ -204,10 +203,9 @@ public class Utility extends Thread {
 			}
 			
 			String output = "" + sum;
-			System.out.println(output);
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
-			//System.out.printf("Sending data: %d\n", sum);
+			System.out.printf("Sending data: %s\n", output);
 			//System.out.println("Numbers given: " + dataArray);
 			
 
@@ -327,7 +325,7 @@ class ClientHandler implements Runnable {
 		try {
 			int data[] = Utility.receiveData(clientSocket);
 			Utility.sortData(data, sortType);
-			int result = data.length;
+			//int result = data.length;
 			String masterIP= clientSocket.getInetAddress().getHostAddress();
 			int masterPort = 6500;
 			try{

@@ -183,14 +183,13 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
 
                 String str = new String(b, StandardCharsets.UTF_8);
                 total += Integer.parseInt(str);
-                System.out.println(total);
                 
                 //remove server from hashmap to indicate failure to receive
                 m.remove(found);
 
                 received++;
                 found = -1;
-                System.out.print("Sum added to Total\n");
+                System.out.printf("Sum added to Total\n");
 
                 //check terminating condition
                 if(received >= units){
@@ -208,7 +207,6 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
             System.out.printf("Wait Timed Out\n");
             receiving = false;
             e.printStackTrace();
-            System.exit(1);
         }
         
         }
@@ -281,7 +279,6 @@ public int checkList(String ip, int port, HashMap<Integer, ServerList> m){
         }
 
     }
-    System.out.println(found);
     return found;
 }
 
@@ -326,8 +323,6 @@ public void resendData(HashMap<Integer, ServerList> m, String[] array, Socket so
 //return data to client
 public void returnData(int sum, String ip, int port){
     try{
-        System.out.println(ip);
-        System.out.println(port);
         Socket s = new Socket(ip, port);
 
         OutputStream o = s.getOutputStream();
@@ -342,7 +337,6 @@ public void returnData(int sum, String ip, int port){
 
         System.out.printf("Final Data Sent Successfully\n");
 
-        System.exit(1);
     }catch(Exception e){
         System.out.printf("Final Data Send Failed\n");
     }
