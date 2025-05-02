@@ -23,11 +23,11 @@ public void receive(){
         //create empty datagram to receive incoming messages (buffer size does not have to be 1000)
         byte[] buffer = new byte[1000];
         DatagramPacket p = new DatagramPacket(buffer, 0, buffer.length);
-        System.out.println("Awaiting packet");
+        System.out.printf("Awaiting packet%n");
         //wait to receive code (puts thread to sleep so beware if you want to put a timer)
         s.receive(p);
 
-        System.out.println("Packet Received");
+        System.out.printf("Packet Received%n");
 
         //convert data received to byte array
         byte[] bytes = p.getData();
