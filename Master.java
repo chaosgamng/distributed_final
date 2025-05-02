@@ -64,7 +64,7 @@ public void run(){
 }
 
 public void healthCheck(){
-    System.out.printf("Initiating HealthCheck");
+    System.out.printf("Initiating HealthCheck\n");
     serverList = new ArrayList<ServerList>();
     MulticastSocket s = null;
     String message = "Hello";
