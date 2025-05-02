@@ -43,20 +43,20 @@ public class Utility extends Thread {
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
-			System.out.println("Server Started @ \n" + portNo);
+			System.out.printf("Server Started @ %d%n", portNo);
 			
 			listenToMulticast(status);
 
 			while (running) {
 				Socket clientSocket = serverSocket.accept();
-				System.out.println("Connection Successful\n");
+				System.out.printf("Connection Successful%n");
 
 				Thread t = new Thread(new ClientHandler(clientSocket, sortType));
 				t.start();
 			}
 
 		} catch (Exception e) {
-			System.out.println("Failed to Connect\n");
+			System.out.printf("Failed to Connect\n");
 			e.printStackTrace();
 			
 			// serverSocket.close();
@@ -154,7 +154,7 @@ public class Utility extends Thread {
 			b.close();
 
 		} catch (Exception e) {
-			System.out.println("Data Reception Failed\n");
+			System.out.printf("Data Reception Failed%n");
 			e.printStackTrace();
 		}
 		
@@ -177,7 +177,7 @@ public class Utility extends Thread {
 		
 		status = "Not Available";
 		try {
-			System.out.println("Attempting connection");
+			System.out.printf("Attempting connection%n");
 			OutputStream o = socket.getOutputStream();
 			PrintWriter writer = new PrintWriter(o, true);
 			int[] dataFirst = Arrays.copyOfRange(data, 0, Math.min(5, data.length));
@@ -193,16 +193,16 @@ public class Utility extends Thread {
 			
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
-			System.out.println("Sending data: \n"  + sum);
-			System.out.println("Numbers given: \n" + dataArray);
+			System.out.printf("Sending data:%n%d%n", sum);
+			System.out.printf("Numbers given: %n%d%n",Arrays.toString(dataArray));
 			writer.print(sum);
 			//writer.print(dataFile);
 
-				System.out.println("Success\n");
+				System.out.printf("Success%n");
 			writer.flush();
-			System.out.println("Data Sent\n");
+			System.out.printf("Data Sent%n");
 		} catch (Exception e) {
-			System.out.println("Write Failed\n");
+			System.out.printf("Write Failed%n");
 			e.printStackTrace();
 		}
 		status = "Available";
@@ -222,8 +222,8 @@ public class Utility extends Thread {
 			mergeSort(data, data.length);
 			break;
 		default:
-			System.out.println("Try between options: \n");
-			System.out.println("insertion, bubble or merge\n");
+			System.out.printf("Try between options: %n");
+			System.out.printf("insertion, bubble or merge%n");
 		}
 	}
 
@@ -238,12 +238,12 @@ public class Utility extends Thread {
 
 					byte[] buffer = new byte[1024];
 					DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-					System.out.println("Listening for multicast messages \n");
+					System.out.printf("Listening for multicast messages %n");
 
 					while (running) {
 						socket.receive(packet);
 						String message = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
-						System.out.println("Message Received: \n" + message);
+						System.out.printf("Message Received: %n", message);
 
 						// response
 						
@@ -274,7 +274,8 @@ public class Utility extends Thread {
 			u.start();
 			
 		} else {
-			System.out.println("Please enter port # and sorting type\n");
+			System.out.printf("Please enter port # and sorting type%n");
+			System.out.printf("Sorts: Insertion, Bubble, or Merge%n");
 		}
 
 	}
