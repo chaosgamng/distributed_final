@@ -3,6 +3,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.io.OutputStream;
@@ -74,11 +75,9 @@ public void receive(){
     InputStream i = socket.getInputStream();
 
     byte[] bytes = i.readAllBytes();
-    String string = bytes.toString();
+    String string = new String(bytes, StandardCharsets.UTF_8);
 
-    for(int j = 0; j < bytes.length; j++){
-        System.out.print(bytes[j]);
-    }
+    System.out.printf("The Final Result is: %s\n", string);
     socket.close();
     server.close();
     

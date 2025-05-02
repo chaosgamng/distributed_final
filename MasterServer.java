@@ -146,7 +146,6 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
     System.out.printf("Beginning File Parsing\n");
     String[] tokens = s.split(" ");
     int units = Math.ceilDiv(tokens.length, 10000000);
-    System.out.println(units);
     //instantiate socket for connecting to EACH individual server multiple sockets will not be used
     Socket socket = null;
     //keeps track of array pieces sent
@@ -175,10 +174,6 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
         socket = serve.accept();
         System.out.printf("Data Return Connection Accepted\n");
         if(socket != null){
-            //set terminating condition
-            if(received >= units){
-                receiving = false;
-            }
            int found = checkList(socket.getInetAddress().getHostAddress(), socket.getPort(), m);
                 //if connection is on waiting list, read in data, increment total and number of array pieces received
                 if(found != -1){
@@ -186,9 +181,9 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
                 InputStream i = socket.getInputStream();
                 byte[] b = i.readAllBytes();
 
-                String str = b.toString();
-                //total += Integer.parseInt(str);
-                System.out.println("The String is: " + str);
+                String str = new String(b, StandardCharsets.UTF_8);
+                total += Integer.parseInt(str);
+                System.out.println(total);
                 
                 //remove server from hashmap to indicate failure to receive
                 m.remove(found);
@@ -196,6 +191,12 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
                 received++;
                 found = -1;
                 System.out.print("Sum added to Total\n");
+
+                //check terminating condition
+                if(received >= units){
+                    receiving = false;
+                }
+
                 }
                 else{
                     socket.close();
@@ -330,7 +331,11 @@ public void returnData(int sum, String ip, int port){
         Socket s = new Socket(ip, port);
 
         OutputStream o = s.getOutputStream();
-        o.write(sum);
+
+        String str = "" + sum;
+        byte[] bytes = str.getBytes();
+
+        o.write(bytes);
         o.flush();
         o.close();
         s.close();
