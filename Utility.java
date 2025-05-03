@@ -20,6 +20,7 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
+import java.util.Enumeration;
 
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
@@ -29,6 +30,7 @@ public class Utility extends Thread {
 	private String sortType;
 	private static final Lock entryLock = new ReentrantLock();
 	private ServerSocket serverSocket;
+	static String status = null;
 
 	boolean running = true;
 
@@ -39,24 +41,25 @@ public class Utility extends Thread {
 
 	@Override
 	public void run() {
-		String status = "Currently Running";
+		status = "Available";
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
-			System.out.println("Server Started @ " + portNo);
+			System.out.printf("Server Started @ %d\n", portNo);
 			
 			listenToMulticast(status);
 
 			while (running) {
+				System.out.printf("Awaiting Master Server Connection\n");
 				Socket clientSocket = serverSocket.accept();
-				System.out.println("Connection Successful");
+				System.out.printf("Connection Successful\n");
 
 				Thread t = new Thread(new ClientHandler(clientSocket, sortType));
 				t.start();
 			}
 
 		} catch (Exception e) {
-			System.out.println("Failed to Connect");
+			System.out.printf("Failed to Connect\n");
 			e.printStackTrace();
 			LOGGER.severe("An error has occurred");
 			// serverSocket.close();
@@ -66,6 +69,7 @@ public class Utility extends Thread {
 	}
 
 	public static void insertionSort(int[] data) {
+		System.out.printf("Beginning Insertion Sort\n");
 		for (int i = 1; i < data.length; i++) {
 			int key = data[i];
 			int j = i - 1;
@@ -78,9 +82,12 @@ public class Utility extends Thread {
 			data[j + 1] = key;
 		}
 
+		System.out.printf("Insertion Sort Complete\n");
+
 	}
 
 	public static void bubbleSort(int[] data) {
+		System.out.printf("Beginning Bubble Sort\n");
 		int n = data.length;
 
 		for (int i = 0; i < n - 1; i++) {
@@ -92,9 +99,12 @@ public class Utility extends Thread {
 			}
 		}
 
+		System.out.printf("Bubble Sort Complete\n");
+
 	}
 
 	public static void mergeSort(int[] data, int n) {
+		System.out.printf("Beginning Merge Sort\n");
 
 		if (n < 2) {
 			return;
@@ -114,6 +124,7 @@ public class Utility extends Thread {
 
 		merge(data, L, R, m, n - m);
 
+		System.out.printf("Merge Sort Completed\n");
 	}
 
 	public static void merge(int data[], int[] L, int[] R, int l, int r) {
@@ -139,8 +150,10 @@ public class Utility extends Thread {
 	}
 
 	public synchronized static int[]  receiveData(Socket socket) throws IOException {
+		status = "Unavailable";
 		int[] data = null;
 		try {
+			System.out.printf("Util Server Receiving Data\n");
 			BufferedInputStream b = new BufferedInputStream(socket.getInputStream());
 			byte[] bytes = b.readAllBytes();
 
@@ -148,12 +161,16 @@ public class Utility extends Thread {
 			String[] tokens = str.split(" ");
 			data = new int[tokens.length];
 			for (int i = 0; i < tokens.length; i++) {
+				if(!tokens[i].equals("")){
 				data[i] = Integer.parseInt(tokens[i]);
+				}
 			}
 			b.close();
+			
+			System.out.printf("Data Received\n");
 
 		} catch (Exception e) {
-			System.out.println("Data Reception Failed");
+			System.out.printf("Data Reception Failed\n");
 			e.printStackTrace();
 		}
 
@@ -169,29 +186,42 @@ public class Utility extends Thread {
 		System.arraycopy(last, 0, combined, 0, length2);
 		return combined;
 	}
-
 	public synchronized static void sendData(Socket socket, int[] data) {
 		
-	
+		status = "Unavailable";
 		try {
-			System.out.println("Attempting connection");
+			System.out.printf("Attempting to Send Data to Master Server\n");
 			OutputStream o = socket.getOutputStream();
-			PrintWriter writer = new PrintWriter(o, true);
 			int[] dataFirst = Arrays.copyOfRange(data, 0, Math.min(5, data.length));
 			int[] dataLast = Arrays.copyOfRange(data, Math.max(0, data.length-5), data.length);
+			int sum = 0;
+			for(int i=0; i<Math.min(5, data.length); i++ ) {
+				sum+= data[i];
+			}
+			for(int i=Math.max(0, data.length-5); i<data.length; i++) {
+				sum+= data[i];
+			}
 			
+			String output = "" + sum;
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
-			System.out.println("Sending data: "  + dataFile);
-			writer.print(dataFile );
+			System.out.printf("Sending data: %s\n", output);
+			//System.out.println("Numbers given: " + dataArray);
+			
 
-				System.out.println("Success");
-			writer.flush();
-			System.out.println("Data Sent");
+			byte[] bytes = output.getBytes();
+
+			o.write(bytes);
+			o.flush();
+			o.close();
+
+			System.out.printf("Data Successfully Sent\n");
 		} catch (Exception e) {
-			System.out.println("Write Failed");
+			System.out.printf("Write Failed\n");
 			e.printStackTrace();
 		}
+
+		status = "Available";
 
 	}
 
@@ -207,34 +237,49 @@ public class Utility extends Thread {
 			mergeSort(data, data.length);
 			break;
 		default:
-			System.out.println("Try between options: ");
-			System.out.println("insertion, bubble or merge");
+			System.out.printf("Try between options: \n");
+			System.out.printf("insertion, bubble or merge\n");
 		}
 	}
 
 	private void listenToMulticast(String status) {
 		Thread multicastThread = new Thread(new Runnable() {
 			public void run() {
-
 				try (MulticastSocket socket = new MulticastSocket(6000)) {
 					InetAddress group = InetAddress.getByName("224.0.0.22");
-					NetworkInterface netIf = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
+					NetworkInterface netIf = NetworkInterface.getByName("eth0");
 					socket.joinGroup(new InetSocketAddress(group, 6000), netIf);
 
 					byte[] buffer = new byte[1024];
 					DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-					System.out.println("Listening for multicast messages ");
+					System.out.printf("Listening for multicast messages \n");
+
+					InetAddress ad = null;
 
 					while (running) {
 						socket.receive(packet);
 						String message = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
-						System.out.println("Message Received: " + message);
+						System.out.printf("Message Received: %s\n",message);
 
 						// response
-						
-						String hostAddress = group.getHostAddress();
+						Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces();
+						while(n.hasMoreElements()){
+							NetworkInterface net = n.nextElement();
+
+							if(net.getName().equals("eth0")){
+								Enumeration<InetAddress> a = net.getInetAddresses();
+
+								while(a.hasMoreElements()){
+									ad = a.nextElement();
+								}
+
+								
+							}
+						}
+						String hostAddress = ad.getHostAddress();
+						System.out.println(hostAddress);
 						String response= null;
-					  response = hostAddress + " " + 6000 +" " +  status;
+					  response = hostAddress + " " + portNo + " " +  status;
 						byte[] responseByte = response.getBytes(StandardCharsets.UTF_8);
 						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
 								packet.getAddress(), packet.getPort());
@@ -259,7 +304,7 @@ public class Utility extends Thread {
 			u.start();
 			
 		} else {
-			System.out.println("Please enter port # and sorting type");
+			System.out.printf("Please enter port # and sorting type\n");
 		}
 
 	}
@@ -280,16 +325,19 @@ class ClientHandler implements Runnable {
 		try {
 			int data[] = Utility.receiveData(clientSocket);
 			Utility.sortData(data, sortType);
-			int result = data.length;
+			//int result = data.length;
 			String masterIP= clientSocket.getInetAddress().getHostAddress();
 			int masterPort = 6500;
-			try(Socket returnSocket = new Socket(masterIP, masterPort);
-					OutputStream os =  returnSocket.getOutputStream()){
-				os.write(Integer.toString(result).getBytes(StandardCharsets.UTF_8));
-				os.flush();
+			try{
+				System.out.printf("Attempting to Connect to Master Server\n");
+				Socket returnSocket = new Socket(masterIP, masterPort);
+					Utility.sendData(returnSocket, data);
+					clientSocket.close();
+			}catch(Exception e){
+				System.out.printf("Connection to Master Server failed\n");
+				e.printStackTrace();
 			}
 			
-			clientSocket.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
