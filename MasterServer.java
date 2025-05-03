@@ -190,7 +190,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
                 received++;
                 found = -1;
                 System.out.printf("Sum added to Total\n");
-
+                socket.close();
                 //check terminating condition
                 if(received >= units){
                     receiving = false;
@@ -203,6 +203,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
             }
 
         }
+        serve.close();
         }catch(Exception e){
             System.out.printf("Wait Timed Out\n");
             receiving = false;

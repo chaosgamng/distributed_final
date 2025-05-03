@@ -2,8 +2,8 @@ import java.util.TimerTask;
 
 public class TimerHelper extends TimerTask{
 
-    Master m;
-    TimerHelper(Master m){
+   private MasterServer m;
+   public TimerHelper(MasterServer m){
         this.m = m;
     }
 
