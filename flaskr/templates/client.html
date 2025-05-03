@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Upload and Output</title>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .left-panel, .right-panel {
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .left-panel {
+      background-color: #f4f4f4;
+      border-right: 2px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .right-panel {
+      background-color: #fff;
+      display: flex;
+      flex-direction: column;
+      
+    }
+
+    .upload-box {
+      padding: 2rem;
+      text-align: center;
+      border: 2px dashed #999;
+      background: #fafafa;
+    }
+
+    .text-output {
+      padding: 1rem;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      white-space: pre-wrap;
+      overflow-y: auto; /* Enable vertical scrolling */
+      overflow-x: hidden; /* Hide horizontal scrolling */
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="left-panel">
+    <form class="upload-box" action="/upload" method="POST" enctype="multipart/form-data">
+      <label for="file">Select a text file:</label><br><br>
+      <input type="file" name="file" accept=".txt" required><br><br>
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+  <div class="right-panel">
+    <div class="text-output" >
+      {% if file_content %}
+        {{ file_content }}
+      {% else %}
+        Text output will appear here after uploading a file.
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
