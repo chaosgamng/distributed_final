@@ -1,7 +1,4 @@
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -94,20 +91,20 @@ class clientHandler extends Thread{
         System.out.println("Running client handler");
         try{
             InputStream inputStream = client.getInputStream();
-            FileOutputStream fileOutputStream = new FileOutputStream("received_file.txt");
-            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+            // FileOutputStream fileOutputStream = new FileOutputStream("received_file.txt");
+            // BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
 
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer, 0, buffer.length)) != -1) {
-                bufferedOutputStream.write(buffer, 0, bytesRead);
-            }
-            bufferedOutputStream.close();
-            fileOutputStream.close();
-            inputStream.close();
+            // byte[] buffer = new byte[4096];
+            // int bytesRead;
+            // while ((bytesRead = inputStream.read(buffer, 0, buffer.length)) != -1) {
+            //     bufferedOutputStream.write(buffer, 0, bytesRead);
+            // }
+            // bufferedOutputStream.close();
+            // fileOutputStream.close();
+            // inputStream.close();
             System.out.println("Received file from client");
 
-
+            server.utilityWorkers = new ArrayList<>();
             server.heartbeat();
             Thread.sleep(1000);
             if(server.utilityWorkers.size() == 0){
@@ -116,9 +113,7 @@ class clientHandler extends Thread{
             } else {
                 System.out.println(server.utilityWorkers.size() + " workers found");
             }
-            BufferedReader br = new BufferedReader(new FileReader("received_file.txt"));
-            server.utilityWorkers = new ArrayList<>();
-            server.utilityWorkers.add("127.0.0.1");
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
             PrintWriter[] pws = new PrintWriter[server.utilityWorkers.size()];
             Socket[] sockets = new Socket[pws.length];
             for(int i =0; i < pws.length;i++){
