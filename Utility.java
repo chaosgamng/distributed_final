@@ -21,47 +21,68 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 import java.util.Enumeration;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
 
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
 public class Utility extends Thread {
-	private static final Logger LOGGER = Logger.getLogger(Utility.class.getName());
+
 	private int portNo;
 	private String sortType;
 	private static final Lock entryLock = new ReentrantLock();
 	private ServerSocket serverSocket;
 	static String status = null;
+	private static final Object fileLock = new Object();
 
 	boolean running = true;
 
+	public static void log(String format, Object ... args) {
+		synchronized(fileLock) {
+			try(PrintWriter out = new PrintWriter(new FileWriter("/logs/shared-log.txt", true))){
+				out.printf("%s [%s] [Utility] ", java.time.LocalDateTime.now(), Thread.currentThread().getName());
+				out.printf(format + "%n", args);
+			}catch(IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
 	Utility(int portNo, String sortType) {
 		this.portNo = portNo;
 		this.sortType = sortType;
+		Utility.log("Instance of Utility was created with port %d and sort %s", portNo, sortType);
 	}
 
 	@Override
 	public void run() {
 		status = "Available";
+		Utility.log("Utility thread made on port %d with sort '%s'", portNo, sortType);
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
+			Utility.log("Server socket opened on port %d", portNo);
 			System.out.printf("Server Started @ %d\n", portNo);
 			
 			listenToMulticast(status);
 
 			while (running) {
-				System.out.printf("Awaiting Master Server Connection\n");
+				Utility.log("Awaiting MasterServer Connection...");
+				System.out.printf("Awaiting Master Server Connection...\n");
 				Socket clientSocket = serverSocket.accept();
 				System.out.printf("Connection Successful\n");
+				Utility.log("Connection Sucessful");
 
 				Thread t = new Thread(new ClientHandler(clientSocket, sortType));
 				t.start();
 			}
 
 		} catch (Exception e) {
+			Utility.log("Exception encountered in run(): %s", e.getMessage());
 			System.out.printf("Failed to Connect\n");
 			e.printStackTrace();
-			LOGGER.severe("An error has occurred");
 			// serverSocket.close();
 			status = "Process Failed";
 		}
@@ -69,6 +90,7 @@ public class Utility extends Thread {
 	}
 
 	public static void insertionSort(int[] data) {
+		Utility.log("Insertion sort started with array: %s", Arrays.toString(data));
 		System.out.printf("Beginning Insertion Sort\n");
 		for (int i = 1; i < data.length; i++) {
 			int key = data[i];
@@ -83,10 +105,12 @@ public class Utility extends Thread {
 		}
 
 		System.out.printf("Insertion Sort Complete\n");
+		Utility.log("Insertion sort completed");
 
 	}
 
 	public static void bubbleSort(int[] data) {
+		Utility.log("Bubble sort started with array: %s", Arrays.toString(data));
 		System.out.printf("Beginning Bubble Sort\n");
 		int n = data.length;
 
@@ -100,11 +124,13 @@ public class Utility extends Thread {
 		}
 
 		System.out.printf("Bubble Sort Complete\n");
+		Utility.log("Bubble sort completed");
 
 	}
 
 	public static void mergeSort(int[] data, int n) {
 		System.out.printf("Beginning Merge Sort\n");
+		Utility.log("Merge sort started with array: %s", Arrays.toString(data));
 
 		if (n < 2) {
 			return;
@@ -125,6 +151,7 @@ public class Utility extends Thread {
 		merge(data, L, R, m, n - m);
 
 		System.out.printf("Merge Sort Completed\n");
+		Utility.log("Merge sort completed");
 	}
 
 	public static void merge(int data[], int[] L, int[] R, int l, int r) {
@@ -152,8 +179,12 @@ public class Utility extends Thread {
 	public synchronized static int[]  receiveData(Socket socket) throws IOException {
 		status = "Unavailable";
 		int[] data = null;
+		
+		
 		try {
 			System.out.printf("Util Server Receiving Data\n");
+			Utility.log("Receiving data from socket: %s", socket.getInetAddress());
+			
 			BufferedInputStream b = new BufferedInputStream(socket.getInputStream());
 			byte[] bytes = b.readAllBytes();
 
@@ -168,9 +199,11 @@ public class Utility extends Thread {
 			b.close();
 			
 			System.out.printf("Data Received\n");
+			Utility.log("Data Received: %s", Arrays.toString(data));
 
 		} catch (Exception e) {
 			System.out.printf("Data Reception Failed\n");
+			Utility.log("Exception encountered in receiveData(): %s", e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -187,10 +220,12 @@ public class Utility extends Thread {
 		return combined;
 	}
 	public synchronized static void sendData(Socket socket, int[] data) {
-		
+		Utility.log("Getting ready to send data to MasterServer");
 		status = "Unavailable";
 		try {
-			System.out.printf("Attempting to Send Data to Master Server\n");
+			//System.out.printf("Attempting to Send Data to Master Server\n");
+			
+			
 			OutputStream o = socket.getOutputStream();
 			int[] dataFirst = Arrays.copyOfRange(data, 0, Math.min(5, data.length));
 			int[] dataLast = Arrays.copyOfRange(data, Math.max(0, data.length-5), data.length);
@@ -205,7 +240,8 @@ public class Utility extends Thread {
 			String output = "" + sum;
 			int[] dataArray = combine(dataFirst, dataLast);
 			String dataFile = Arrays.toString(dataArray);
-			System.out.printf("Sending data: %s\n", output);
+			System.out.printf("Sending data to MasterServer: %s\n", output);
+			Utility.log("Sending data: %s", output);
 			//System.out.println("Numbers given: " + dataArray);
 			
 
@@ -216,8 +252,10 @@ public class Utility extends Thread {
 			o.close();
 
 			System.out.printf("Data Successfully Sent\n");
+			Utility.log("Data Successfully Sent: %s (sum: %s)", Arrays.toString(data), output);
 		} catch (Exception e) {
 			System.out.printf("Write Failed\n");
+			Utility.log("Exception encountered in sendData(): %s", e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -226,6 +264,7 @@ public class Utility extends Thread {
 	}
 
 	public static void sortData(int[] data, String sortType) {
+		Utility.log("Sorting data using method: %s", sortType);
 		switch (sortType.toLowerCase()) {
 		case "insertion":
 			insertionSort(data);
@@ -253,6 +292,7 @@ public class Utility extends Thread {
 					byte[] buffer = new byte[1024];
 					DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 					System.out.printf("Listening for multicast messages \n");
+					Utility.log("Listening for multicast messages on 224.0.0.22:6000");
 
 					InetAddress ad = null;
 
@@ -260,6 +300,7 @@ public class Utility extends Thread {
 						socket.receive(packet);
 						String message = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
 						System.out.printf("Message Received: %s\n",message);
+						Utility.log("Message Recieved: %s", message);
 
 						// response
 						Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces();
@@ -284,6 +325,7 @@ public class Utility extends Thread {
 						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
 								packet.getAddress(), packet.getPort());
 						socket.send(reply);
+						Utility.log("Responded with message: %s", response);
 					}
 					socket.leaveGroup(new InetSocketAddress(group, 6000), netIf);
 				} catch (Exception e) {
@@ -322,23 +364,28 @@ class ClientHandler implements Runnable {
 
 	@Override
 	public void run() {
+		Utility.log("ClientHandler started for socket: %s", clientSocket.getInetAddress().getHostAddress());
 		try {
 			int data[] = Utility.receiveData(clientSocket);
 			Utility.sortData(data, sortType);
+			Utility.log("SOrting data for client %s:", clientSocket.getInetAddress());
 			//int result = data.length;
 			String masterIP= clientSocket.getInetAddress().getHostAddress();
 			int masterPort = 6500;
 			try{
 				System.out.printf("Attempting to Connect to Master Server\n");
+				Utility.log("Attempting to connect to MasterServer at %s %d",masterIP, masterPort);
 				Socket returnSocket = new Socket(masterIP, masterPort);
 					Utility.sendData(returnSocket, data);
 					clientSocket.close();
 			}catch(Exception e){
 				System.out.printf("Connection to Master Server failed\n");
+				Utility.log("Exception encountered in ClientHandler run() attempting to connect to MasterServer",e.getMessage());
 				e.printStackTrace();
 			}
 			
 		} catch (Exception ex) {
+			Utility.log("Exception encounter in ClientHandler run()", ex.getMessage());
 			ex.printStackTrace();
 		}
 	}
