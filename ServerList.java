@@ -14,7 +14,7 @@ public class ServerList{
 
 	public static void log(String format, Object... args) {
 		synchronized (fileLock) {
-			try (PrintWriter out = new PrintWriter(new FileWriter("/logs/shared-log.txt", true))) {
+			try (PrintWriter out = new PrintWriter(new FileWriter("/logs/log.txt", true))) {
 				out.printf("%s [%s] [ServerList]", java.time.LocalDateTime.now(), Thread.currentThread().getName());
 				out.printf(format + "%n", args);
 			} catch (IOException e) {
