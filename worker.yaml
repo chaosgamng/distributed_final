@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: master1
+    labels:
+        app: master-node1
+        role: leader
+        tier: backend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: master-node1
+    template:
+        metadata:
+            labels:
+                app: master-node1
+                role: leader
+                tier: backend
+        spec:
+            hostNetwork: true
+
+            containers:
+            -   name: leader
+                image: client
+                imagePullPolicy: Never
+                resources:
+                    requests:
+                        cpu: 800m
+                        memory: 800Mi
+                ports:
+                -   containerPort: 5000
+                -   containerPort: 4999
+                -   containerPort: 6500
+                -   containerPort: 6501
+                -   containerPort: 6000
+                -   containerPort: 7000
+            nodeSelector:
+                kubernetes.io/hostname: "k3d-k3s-default-server-1"

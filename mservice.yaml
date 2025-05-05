@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: master
+    labels:
+        app: master-node
+        role: leader
+        tier: backend
+spec:
+    ports:
+    - protocol: TCP
+      name: server
+      port: 5000
+      targetPort: 5000
+    - protocol: TCP
+      name: server1
+      port: 6500
+      targetPort: 6500
+    - protocol: TCP
+      name: server2
+      port: 6501
+      targetPort: 6501
+    - protocol: TCP
+      name: server3
+      port: 4999
+      targetPort: 4999
+    - protocol: TCP
+      name: server4
+      port: 6000
+      targetPort: 6000
+    - protocol: TCP
+      name: server5
+      port: 7000
+      targetPort: 7000
+    externalIPs:
+    -   172.18.0.4
+    selector:
+        app: master-node
+        role: leader
+        tier: backend
+
