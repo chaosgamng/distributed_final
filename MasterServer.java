@@ -1,9 +1,11 @@
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.lang.Math;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.HashMap;
@@ -45,73 +48,84 @@ try{
 
 //activates after thread spawn
 public void run(){
-    //save server and client sockets for return transmission and so they won't be erased if new connection is made
-    String clientIp = clientSocket.getInetAddress().getHostAddress();
-    int clientPort = clientSocket.getLocalPort();
-     //tracks servers being actively used for THIS task AND which array piece they are scanning
-     HashMap<Integer, ServerList> m = new HashMap<Integer, ServerList>();
-    //manage working and not working Util Servers
-    healthCheck();
-    //Receive File for processing
-    String s = receiveFile();
-     //parse data and send to available utility servers
-    int total = parseFile(s, m);
+    try{
+        InputStreamReader re = new InputStreamReader(clientSocket.getInputStream());
+        BufferedReader br = new BufferedReader(re);
+        //save server and client sockets for return transmission and so they won't be erased if new connection is made
+        String clientIp = clientSocket.getInetAddress().getHostAddress();
+        int clientPort = clientSocket.getLocalPort();
+        //tracks servers being actively used for THIS task AND which array piece they are scanning
+        HashMap<Integer, ServerList> m = new HashMap<Integer, ServerList>();
+        //manage working and not working Util Servers
+        healthCheck();
+        //Receive File for processing
+        String s = "";
+        while(re.ready() == false){
+            
+        }
+        s = br.readLine();
+        System.out.printf("File Received from Client\n");
+        System.out.println();
+        //parse data and send to available utility servers
+        Thread.sleep(4000);
+        int total = parseFile(s, m);
+        returnData(total, clientIp, 4999);
+    } catch (Exception e){
+
+    }
+    
 
     
 
-    returnData(total, clientIp, 7000);
     
 }
 
 public void healthCheck(){
-    System.out.printf("Initiating HealthCheck\n");
+    // System.out.printf("Initiating HealthCheck\n");
     serverList = new ArrayList<ServerList>();
     MulticastSocket s = null;
     String message = "Hello";
     try{
         //Establish new multicast socket, address, and port #, then send information for health check
         s = new MulticastSocket();
-        InetAddress address = InetAddress.getByName("10.0.2.15");
-        InetSocketAddress a = new InetSocketAddress(address, 6000);   
-        DatagramPacket packet  = new DatagramPacket(message.getBytes(), message.length(), a);
-        System.out.printf("Sending Health Check Packet\n");
-            s.send(packet);
+        // System.out.printf("Sending Health Check Packet\n");
+        for(int i =1; i < 2;i++){
+            Socket check = new Socket();   
+            check.connect(new InetSocketAddress("127.0.0." + i, 6000), 4000); 
+            PrintWriter pw = new PrintWriter(check.getOutputStream(), true);
+            pw.println(message);
+            // System.out.println("127.0.0." + i);
+            // System.out.printf("Starting wait\n");
 
-
-        //Set up to receive return info (should be util i.p., port #, and status)    
-        byte[] buffer = new byte[1000];
-        DatagramPacket p = new DatagramPacket(buffer, 0, buffer.length);
-
-        System.out.printf("Starting wait\n");
-        while(s.isClosed() == false){
-        s.setSoTimeout(5000);
-        s.receive(p);
-        processCheck(p);
-        System.out.printf("Response Packet Received\n");
-        }
-
-        s.close();
-
-        if(serverList.size() > 0){
+            while(check.getInputStream().available() <= 0){
+            }
+            BufferedReader br = new BufferedReader(new InputStreamReader(check.getInputStream()));
+            String data = br.readLine();
+            // System.out.println(data);
+            processCheck(data);
+            // System.out.printf("Response Packet Received\n");
+            pw.close();
+            check.close();
+            
             
         }
+        // System.out.printf("Wait ended\n");
 
-        System.out.printf("Wait ended\n");
-    }catch(Exception e){
         
+       
+
+        
+    }catch(Exception e){
+        System.out.println("Something went wrong");
     }
     finally{
-        System.out.printf("Heartbeat Check Complete\n");
+        // System.out.printf("Heartbeat Check Complete\n");
     }
 }
 
     //process return data from heartbeat and add responding servers to list
-    public void processCheck(DatagramPacket p){
-        byte[] bytes = p.getData();
-
-        String str = new String(bytes, StandardCharsets.UTF_8);
-        
-        String[] tokens = str.split(" ");
+    public void processCheck(String p){        
+        String[] tokens = p.split(" ");
 
         String ip = tokens[0];
         int port = Integer.parseInt(tokens[1]);
@@ -120,27 +134,28 @@ public void healthCheck(){
         ServerList s = new ServerList(ip, port, status);
 
         serverList.add(s);
-
-        System.out.printf("New Server Added\n");
+        return;
     }
 
-public String receiveFile(){
+// public String receiveFile(){
 
-    String s = "";
+//     String s = "";
 
-    try{
+//     try{
+//         InputStreamReader re = new InputStreamReader(clientSocket.getInputStream());
+//         BufferedReader br = new BufferedReader(re);
+//         while(re.ready() == false){
+            
+//         }
+//         String s = br.readLine();
+//         System.out.printf("File Received from Client\n");
 
-        InputStream i = clientSocket.getInputStream();
-        byte[] bytes = i.readAllBytes();
-        s = new String(bytes, StandardCharsets.UTF_8);
-        System.out.printf("File Received from Client\n");
+//     }catch(Exception e){
+//         System.out.printf("File Reception From Client Failed\n");
+//     }
 
-    }catch(Exception e){
-        System.out.printf("File Reception From Client Failed\n");
-    }
-
-    return s;
-}
+//     return s;
+// }
 
 public int parseFile(String s, HashMap<Integer, ServerList> m){
     System.out.printf("Beginning File Parsing\n");
@@ -189,7 +204,7 @@ public int parseFile(String s, HashMap<Integer, ServerList> m){
 
                 received++;
                 found = -1;
-                System.out.printf("Sum added to Total\n");
+                System.out.printf("Sum added to Total %d\n", total);
                 socket.close();
                 //check terminating condition
                 if(received >= units){
@@ -324,17 +339,13 @@ public void resendData(HashMap<Integer, ServerList> m, String[] array, Socket so
 //return data to client
 public void returnData(int sum, String ip, int port){
     try{
-        Socket s = new Socket(ip, port);
+        Socket sock = new Socket();
+        sock.connect(new InetSocketAddress("127.0.0.1", 4999), 4000);
+        OutputStream o = sock.getOutputStream();
 
-        OutputStream o = s.getOutputStream();
-
-        String str = "" + sum;
-        byte[] bytes = str.getBytes();
-
-        o.write(bytes);
-        o.flush();
-        o.close();
-        s.close();
+        PrintWriter pr = new PrintWriter(o, true);
+        pr.println(sum);
+        pr.close();
 
         System.out.printf("Final Data Sent Successfully\n");
 

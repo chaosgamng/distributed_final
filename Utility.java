@@ -1,26 +1,16 @@
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.net.ServerSocket;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.BufferedInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
-import java.util.Enumeration;
 
 //This class needs added threading capabilities and locking as well as receiving broadcast messages
 
@@ -31,6 +21,7 @@ public class Utility extends Thread {
 	private static final Lock entryLock = new ReentrantLock();
 	private ServerSocket serverSocket;
 	static String status = null;
+	String hostip;
 
 	boolean running = true;
 
@@ -45,6 +36,7 @@ public class Utility extends Thread {
 		
 		try {
 			serverSocket = new ServerSocket(portNo);
+			hostip = serverSocket.getInetAddress().getHostAddress();
 			System.out.printf("Server Started @ %d\n", portNo);
 			
 			listenToMulticast(status);
@@ -245,47 +237,36 @@ public class Utility extends Thread {
 	private void listenToMulticast(String status) {
 		Thread multicastThread = new Thread(new Runnable() {
 			public void run() {
-				try (MulticastSocket socket = new MulticastSocket(6000)) {
-					InetAddress group = InetAddress.getByName("224.0.0.22");
-					NetworkInterface netIf = NetworkInterface.getByName("eth0");
-					socket.joinGroup(new InetSocketAddress(group, 6000), netIf);
+				try {
 
-					byte[] buffer = new byte[1024];
-					DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-					System.out.printf("Listening for multicast messages \n");
-
-					InetAddress ad = null;
+					ServerSocket socket = new ServerSocket(6000);
+									
 
 					while (running) {
-						socket.receive(packet);
-						String message = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8);
-						System.out.printf("Message Received: %s\n",message);
+						System.out.println("Waiting on connection on " + socket.getInetAddress().getHostAddress());
+						Socket sock = socket.accept();
+						System.out.println("connection made");
+						InputStreamReader reader = new InputStreamReader(sock.getInputStream()); 
+						BufferedReader br = new BufferedReader(reader);
+						while(!reader.ready()){
 
-						// response
-						Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces();
-						while(n.hasMoreElements()){
-							NetworkInterface net = n.nextElement();
-
-							if(net.getName().equals("eth0")){
-								Enumeration<InetAddress> a = net.getInetAddresses();
-
-								while(a.hasMoreElements()){
-									ad = a.nextElement();
-								}
-
-								
-							}
 						}
-						String hostAddress = ad.getHostAddress();
+						String message = br.readLine();
+						System.out.printf("Message Received: %s\n",message);
+					
+						// response
+						String hostAddress = sock.getInetAddress().getHostAddress();
 						System.out.println(hostAddress);
 						String response= null;
-					  response = hostAddress + " " + portNo + " " +  status;
-						byte[] responseByte = response.getBytes(StandardCharsets.UTF_8);
-						DatagramPacket reply = new DatagramPacket(responseByte, responseByte.length,
-								packet.getAddress(), packet.getPort());
-						socket.send(reply);
+					    response = hostAddress + " " + portNo + " " +  status;
+						PrintWriter pr = new PrintWriter(sock.getOutputStream(), true);
+						pr.println(response);
+						pr.flush();
+						System.out.println("done");
+
+						br.close();
+						pr.close();
 					}
-					socket.leaveGroup(new InetSocketAddress(group, 6000), netIf);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -326,7 +307,7 @@ class ClientHandler implements Runnable {
 			int data[] = Utility.receiveData(clientSocket);
 			Utility.sortData(data, sortType);
 			//int result = data.length;
-			String masterIP= clientSocket.getInetAddress().getHostAddress();
+			String masterIP = clientSocket.getInetAddress().getHostAddress();
 			int masterPort = 6500;
 			try{
 				System.out.printf("Attempting to Connect to Master Server\n");
